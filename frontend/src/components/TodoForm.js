@@ -50,21 +50,22 @@ const TodoForm = () => {
 
   return (
     <Box
-     
       component="form"
       className="create"
       onSubmit={handleSubmit}
       sx={{
-        maxHeight:'450px',
-        mt: 4,
+        maxHeight: '450px',
+        position: 'fixed',
+        top: '50%',
+        left: '85%',
+        transform: 'translate(-50%, -50%)',
         backgroundColor: 'rgba(255, 255, 255, 0.8)',
         padding: '24px',
         borderRadius: '4px',
-        
-        
+        zIndex: 9999,
       }}
     >
-      <Typography variant="h4" gutterBottom sx={{color:'rgb(228, 152, 10);'}}>
+      <Typography variant="h4" gutterBottom sx={{ color: 'rgb(228, 152, 10);' }}>
         <h4>Add a New TODO</h4>
       </Typography>
 
@@ -107,7 +108,6 @@ const TodoForm = () => {
         }}
         sx={{ mb: 2 }}
       />
-      
 
       <Button type="submit" variant="contained" color="primary" sx={{ color: 'white' }}>
         Add TODO

@@ -49,7 +49,7 @@ const Home = () => {
 
     if (filteredByDate.length > 0) {
       return filteredByDate.map((todo) => (
-        <TodoDetails Todo={todo} key={todo._id} />
+        <TodoDetails Todo={todo} key={todo._id} isCompleted={false} />
       ));
     } else {
       return <p>No todos to display for the selected date.</p>;
@@ -63,7 +63,7 @@ const Home = () => {
       const todoDate = new Date(todo.date).toLocaleDateString();
       const isPastDate = todoDate < currentDate;
       return isPastDate;
-    });
+    }).map((todo) => ({ ...todo, isCompleted: true })); // Add isCompleted property to completed todos
 
   return (
     <div className="home">
@@ -90,7 +90,7 @@ const Home = () => {
             <>
               {filteredTodos && filteredTodos.length > 0 ? (
                 filteredTodos.map((todo) => (
-                  <TodoDetails Todo={todo} key={todo._id} />
+                  <TodoDetails Todo={todo} key={todo._id} isCompleted={false} />
                 ))
               ) : (
                 <p>No todos to display.</p>
@@ -101,7 +101,7 @@ const Home = () => {
         <TabPanel value={activeTab} index="completed">
           {completedTodos && completedTodos.length > 0 ? (
             completedTodos.map((todo) => (
-              <TodoDetails Todo={todo} key={todo._id} />
+              <TodoDetails Todo={todo} key={todo._id} isCompleted={true} />
             ))
           ) : (
             <p>No completed todos to display.</p>
