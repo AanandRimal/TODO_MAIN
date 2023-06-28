@@ -211,24 +211,102 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
+import Chip from '@mui/material/Chip';
 
 const TodoDetails = ({ Todo, isCompleted }) => {
   const { dispatch } = useTodosContext();
   const [isEditing, setIsEditing] = useState(false);
+  const [categoryName, setCategoryName] = useState('');
+  const [priorityName, setPriorityName] = useState('');
+  const [priorities, setPriorities] = useState([]);
+  const [selectedPriority, setSelectedPriority] = useState('');
+
   const [updatedTodo, setUpdatedTodo] = useState({
     title: Todo.title,
     description: Todo.description,
     date: Todo.date,
+    category: Todo.categoryName,
+    priority: Todo.priorityId,
   });
   const { user } = useAuthContext();
+
+  useEffect(() => {
+    const fetchCategoryName = async () => {
+      try {
+        const response = await fetch(`http://localhost:4000/api/categories/${Todo.categoryId}`, {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+        const json = await response.json();
+
+        if (response.ok) {
+          setCategoryName(json.name);
+        } else {
+          setCategoryName('Unknown Category');
+        }
+      } catch (error) {
+        console.error('Error fetching category:', error);
+        setCategoryName('Unknown Category');
+      }
+    };
+
+    const fetchPriorityName = async () => {
+      try {
+        const response = await fetch(`http://localhost:4000/api/priorities/${Todo.priorityId}`, {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+        const json = await response.json();
+
+        if (response.ok) {
+          setPriorityName(json.name);
+        } else {
+          setPriorityName('Unknown Priority');
+        }
+      } catch (error) {
+        console.error('Error fetching priority:', error);
+        setPriorityName('Unknown Priority');
+      }
+    };
+
+    const fetchPriorities = async () => {
+      try {
+        const response = await fetch('http://localhost:4000/api/priorities', {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+        const data = await response.json();
+        setPriorities(data);
+      } catch (error) {
+        console.error('Error fetching priorities:', error);
+      }
+    };
+
+    fetchPriorities();
+    fetchCategoryName();
+    fetchPriorityName();
+  }, [Todo.categoryId, Todo.priorityId, user.token]);
 
   useEffect(() => {
     setUpdatedTodo({
       title: Todo.title,
       description: Todo.description,
       date: Todo.date,
+      category: Todo.categoryName,
+      priorityId: Todo.priorityId,
     });
   }, [Todo]);
+
+  const handlePriorityClick = (priorityI) => {
+    setSelectedPriority(priorityI);
+    setUpdatedTodo((prevTodo) => ({
+      ...prevTodo,
+      priorityId: priorityI,
+    }));
+  };
 
   if (!user) {
     return null;
@@ -301,6 +379,7 @@ const TodoDetails = ({ Todo, isCompleted }) => {
   const timeRemaining = !isCompleted ? formatDistanceToNow(new Date(Todo.date), { addSuffix: true }) : null;
 
   return (
+
     <Box
       sx={{
         marginBottom: 4,
@@ -315,6 +394,8 @@ const TodoDetails = ({ Todo, isCompleted }) => {
         },
       }}
     >
+
+
       <Typography variant="h6" gutterBottom sx={{ color: 'rgb(228, 152, 10)' }}>
         <h4>{Todo.title}</h4>
       </Typography>
@@ -327,10 +408,24 @@ const TodoDetails = ({ Todo, isCompleted }) => {
         <strong>Date: </strong>
         {formattedDate}
       </Typography>
+      <Stack direction="row" spacing={1} sx={{ color: 'black', marginBottom: '3px', '& > .MuiChip-root:hover': { cursor: 'pointer', transform: 'scale(1.08)' } }}>
+  <strong>Category:</strong>
+  <Chip label={categoryName} variant="outlined" color="primary" />
+</Stack>
+
+<Stack direction="row" spacing={1} sx={{ color: 'black', '& > .MuiChip-root:hover': { cursor: 'pointer', transform: 'scale(1.08)' } }}>
+  <strong>Priority:</strong>
+  <Chip label={priorityName} variant="outlined" color="primary" />
+</Stack>
+
+
+
+
       {isCompleted && (
       <Typography variant="body2" gutterBottom sx={{ color: 'black' }}>
         <strong>TODO Expired </strong>
         </Typography>
+
 )}
      
 
@@ -396,7 +491,23 @@ const TodoDetails = ({ Todo, isCompleted }) => {
     sx={{ backgroundColor: 'white' }}
   />
 </Grid>
+<Grid item xs={12}>
+               
+              <Typography variant="body1" sx={{ marginBottom: '8px' }}>
+        Priority:
+      </Typography>
+      <Box sx={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+      {priorities.map((priority) => (
+  <Chip
+    key={priority._id}
+    label={priority.name}
+    color={selectedPriority === priority._id ? 'secondary' : 'default'}
+    onClick={() => handlePriorityClick(priority._id)}
+  />
+))}
 
+      </Box>
+      </Grid>
             </Grid>
 
             <Button type="submit" variant="contained" color="primary" sx={{ marginTop: 2 }}>
