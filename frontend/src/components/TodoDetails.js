@@ -212,6 +212,8 @@ import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Chip from '@mui/material/Chip';
+import DownloadIcon from '@mui/icons-material/Download';
+import { useLanguageContext } from "../hooks/useLanguageContext";
 
 const TodoDetails = ({ Todo, isCompleted }) => {
   const { dispatch } = useTodosContext();
@@ -227,9 +229,10 @@ const TodoDetails = ({ Todo, isCompleted }) => {
     date: Todo.date,
     category: Todo.categoryName,
     priority: Todo.priorityId,
+    file:Todo.file
   });
   const { user } = useAuthContext();
-
+  const { locale, labels, handleLanguageToggle } = useLanguageContext();
   useEffect(() => {
     const fetchCategoryName = async () => {
       try {
@@ -297,6 +300,7 @@ const TodoDetails = ({ Todo, isCompleted }) => {
       date: Todo.date,
       category: Todo.categoryName,
       priorityId: Todo.priorityId,
+      file:Todo.file,
     });
   }, [Todo]);
 
@@ -377,6 +381,36 @@ const TodoDetails = ({ Todo, isCompleted }) => {
   const formattedDate = new Date(Todo.date).toLocaleDateString();
 
   const timeRemaining = !isCompleted ? formatDistanceToNow(new Date(Todo.date), { addSuffix: true }) : null;
+  //FILE DOWNLOAD
+  const handleDownload = async () => {  //When user click in donwload button it call the api download we passed the file path as a query parameter we can also send as body: 
+    try {
+      const response = await fetch(`http://localhost:4000/api/file/download?filePath=${Todo.file}`);
+      //blob is used to represent the binary data as we will be getting binary data so we are using blob object 
+      const fileBlob = await response.blob();
+
+ // Extract the original file name from the file path
+ const originalFileName = Todo.file.split('/').pop();
+  
+      // Extract the file extension from the file path
+      const fileExtension = Todo.file.split('.').pop();
+  
+      // Create a temporary URL for the file blob
+      const fileURL = URL.createObjectURL(fileBlob); 
+  
+      // Create a link element and click it to trigger the file download
+      const link = document.createElement('a'); // this is ancor tag made
+      link.href = fileURL;
+      link.download = `${originalFileName}.${fileExtension}`; // Set the dynamic file name and extension
+      link.click();
+  
+      // Clean up the temporary URL
+      URL.revokeObjectURL(fileURL);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
+  };
+  
+  
 
   return (
 
@@ -396,34 +430,28 @@ const TodoDetails = ({ Todo, isCompleted }) => {
     >
 
 
-      <Typography variant="h6" gutterBottom sx={{ color: 'rgb(228, 152, 10)' }}>
-        <h4>{Todo.title}</h4>
-      </Typography>
-      <Typography variant="body1" gutterBottom sx={{ color: 'black' }}>
-        <strong>Description: </strong>
-        {Todo.description}
-      </Typography>
-
-      <Typography variant="body1" gutterBottom sx={{ color: 'black' }}>
-        <strong>Date: </strong>
-        {formattedDate}
-      </Typography>
-      <Stack direction="row" spacing={1} sx={{ color: 'black', marginBottom: '3px', '& > .MuiChip-root:hover': { cursor: 'pointer', transform: 'scale(1.08)' } }}>
-  <strong>Category:</strong>
+<Typography variant="h4" align="center" gutterBottom sx={{ color: 'rgb(228, 152, 10)' }}>
+ <strong>{Todo.title}</strong>
+</Typography>
+<Typography variant="body1" gutterBottom sx={{ color: 'black', fontWeight: 'bold', marginBottom: '25px' }}>
+ {Todo.description}
+</Typography>
+      <Stack direction="row" spacing={1} sx={{ color: 'black', marginBottom: '10px', '& > .MuiChip-root:hover': { cursor: 'pointer', transform: 'scale(1.08)' } }}>
+  {/* <strong>{labels.category}</strong> */}
   <Chip label={categoryName} variant="outlined" color="primary" />
 </Stack>
 
-<Stack direction="row" spacing={1} sx={{ color: 'black', '& > .MuiChip-root:hover': { cursor: 'pointer', transform: 'scale(1.08)' } }}>
-  <strong>Priority:</strong>
-  <Chip label={priorityName} variant="outlined" color="primary" />
+<Stack direction="row" spacing={1} sx={{ color: 'black', marginBottom: '10px', '& > .MuiChip-root:hover': { cursor: 'pointer', transform: 'scale(1.08)' } }}>
+  {/* <strong>{labels.priority}</strong> */}
+  <Chip
+    label={priorityName}
+    variant="outlined"
+    color={priorityName === 'High' ? 'error' : priorityName === 'Medium' ? 'warning' : 'success'}
+  />
 </Stack>
-
-
-
-
       {isCompleted && (
-      <Typography variant="body2" gutterBottom sx={{ color: 'black' }}>
-        <strong>TODO Expired </strong>
+      <Typography variant="body2" gutterBottom sx={{ color: 'red' ,marginBottom:'10px'}}>
+        <strong>{labels.todoexpired} </strong>
         </Typography>
 
 )}
@@ -431,10 +459,23 @@ const TodoDetails = ({ Todo, isCompleted }) => {
 
       {!isCompleted && (
         <Box>
-               <Typography variant="body2" gutterBottom sx={{ color: 'black' }}>
-        <strong>TODO Expires </strong>
+               <Typography variant="body2" gutterBottom sx={{ color: 'red',marginBottom:'10px' }}>
+        <strong>{labels.todoexpire} </strong>
         {timeRemaining}
       </Typography>
+     <Typography><strong>{labels.file}</strong>
+      <Button
+        variant="outlined"
+        startIcon={<DownloadIcon />}
+        onClick={handleDownload}
+        sx={{
+          marginTop: '3px',
+          marginBottom:'10px'
+        }}
+      >
+        {labels.download}
+      </Button>
+      </Typography> 
         <Stack direction="row" spacing={1} sx={{ marginBottom: 2 }}>
       
           <IconButton aria-label="Delete" onClick={handleDelete}>
@@ -494,7 +535,7 @@ const TodoDetails = ({ Todo, isCompleted }) => {
 <Grid item xs={12}>
                
               <Typography variant="body1" sx={{ marginBottom: '8px' }}>
-        Priority:
+        {labels.priority}
       </Typography>
       <Box sx={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
       {priorities.map((priority) => (
@@ -511,7 +552,7 @@ const TodoDetails = ({ Todo, isCompleted }) => {
             </Grid>
 
             <Button type="submit" variant="contained" color="primary" sx={{ marginTop: 2 }}>
-              Submit
+              {labels.submit}
             </Button>
           </form>
         </Box>

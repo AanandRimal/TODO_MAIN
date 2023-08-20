@@ -1,29 +1,29 @@
 import React, { useState, useEffect } from "react";
 import { useTodosContext } from "../hooks/useTodosContext";
 import { useAuthContext } from "../hooks/useAuthContext";
-
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import { Grid, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-
 import Typography from "@mui/material/Typography";
 // components
 import TodoDetails from "../components/TodoDetails";
 import TodoForm from "../components/TodoForm";
-
+import enLabels from "../languages/en";
+import neLabels from "../languages/ne";
+import { useLanguageContext } from "../hooks/useLanguageContext";
 const Home = () => {
   const { Todos, dispatch } = useTodosContext();
   const { user } = useAuthContext();
-
+    const { locale, labels, handleLanguageToggle } = useLanguageContext();
   const [activeTab, setActiveTab] = useState("active");
   const [filterDate, setFilterDate] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedPriority, setSelectedPriority] = useState("");
+  const [sortOption, setSortOption] = useState("highestDate");
   const [categories, setCategories] = useState([]);
   const [priorities, setPriorities] = useState([]);
-
   useEffect(() => {
     const fetchTodos = async () => {
       const response = await fetch("http://localhost:4000/api/todos", {
@@ -62,35 +62,49 @@ const Home = () => {
       fetchPriorities();
     }
   }, [dispatch, user]);
-
   // Filter Todos based on the selected date and activeTab
-  const currentDate = new Date().toLocaleDateString();
-  const filteredTodos =
-    Todos &&
-    Todos.filter((todo) => {
-      const todoDate = new Date(todo.date).toLocaleDateString();
-      const isFutureDate = todoDate >= currentDate;
-      return activeTab === "active" ? isFutureDate : !isFutureDate;
-    });
+  const assignedTodos = Todos && Todos.filter((todo) => todo.assignee === user.user_id);
+  const unassignedTodos = Todos && Todos.filter((todo) => todo.assignee !== user.user_id);
 
-  // Sort Todos by date in descending order
-  const sortedFilteredTodos =
-    filteredTodos &&
-    filteredTodos.sort((a, b) => new Date(b.date) - new Date(a.date));
+  const currentDate = new Date();
+  const filteredTodos =
+  assignedTodos &&
+  assignedTodos.filter((todo) => {
+    const todoDate = new Date(todo.date);
+    const isFutureDate = todoDate >= currentDate; // Compare with the current date
+    return activeTab === "active" ? isFutureDate : !isFutureDate;
+  });
+
+
+  // Sort Todos by date in ascending or descending order based on the sorting option
+const sortedFilteredTodos =
+filteredTodos &&
+filteredTodos.sort((a, b) => {
+  if (sortOption === "lowestDate") {
+    return new Date(a.date) - new Date(b.date);
+  } else {
+    return new Date(b.date) - new Date(a.date);
+  }
+});
 
   // Filter completed Todos that have a date in the past
   const completedTodos =
-    Todos &&
-    Todos.filter((todo) => {
-      const todoDate = new Date(todo.date).toLocaleDateString();
-      const isPastDate = todoDate < currentDate;
+    assignedTodos &&
+   assignedTodos.filter((todo) => {
+    const todoDate = new Date(todo.date);
+      const isPastDate = todoDate <  new Date();
       return isPastDate;
     }).map((todo) => ({ ...todo, isCompleted: true })); // Add isCompleted property to completed todos
 
-  // Sort completed Todos by date in descending order
-  const sortedCompletedTodos =
+    const sortedCompletedTodos =
     completedTodos &&
-    completedTodos.sort((a, b) => new Date(b.date) - new Date(a.date));
+    completedTodos.sort((a, b) => {
+      if (sortOption === "lowestDate") {
+        return new Date(a.date) - new Date(b.date);
+      } else {
+        return new Date(b.date) - new Date(a.date);
+      }
+    });
 
   // Group todos by date
   const groupTodosByDate = (todos) => {
@@ -140,7 +154,7 @@ const Home = () => {
         <Box key={group.date} sx={{ marginBottom: 4 }}>
           <Paper
             sx={{
-              backgroundColor: "#f8f8f8",
+              backgroundColor: "#000000",
               padding: "12px",
               marginBottom: "12px",
             }}
@@ -151,29 +165,51 @@ const Home = () => {
             <TodoDetails Todo={todo} key={todo._id} isCompleted={false} />
           ))}
         </Box>
-      ));
+      )); 
     } else {
       return (
-        <p>No todos to display for the selected date, category, and priority.</p>
+        <p style={{color:'white'}}>{labels.soryynotavailabelmsg}</p>
       );
     }
   };
 
   return (
     <div className="home">
-      <div className="workouts">
-        <Tabs value={activeTab} onChange={(e, newTab) => setActiveTab(newTab)}>
-          <Tab
-            value="active"
-            label="Active"
-            sx={{ color: "#ffffff", backgroundColor: "rgba(0, 0, 0, 0.87)" }}
-          />
-          <Tab
-            value="completed"
-            label="Completed"
-            sx={{ color: "#ffffff", backgroundColor: "rgba(0, 0, 0, 0.87)" }}
-          />
-        </Tabs>
+  <div className="toggle-container">
+    <Tabs
+      value={activeTab}
+      onChange={(e, newTab) => setActiveTab(newTab)}
+      sx={{ marginRight: "auto" }} // Align tabs to the left
+    >
+      <Tab
+        value="active"
+        label={labels.activeTab}
+        sx={{
+          color: "#ffffff",
+          backgroundColor: "rgba(0, 0, 0, 0.87)",
+        }}
+      />
+      <Tab
+        value="completed"
+        label={labels.completedTab}
+        sx={{
+          color: "#ffffff",
+          backgroundColor: "rgba(0, 0, 0, 0.87)",
+        }}
+      />
+      <Tab
+        value="assigned"
+        label={labels.assignedTab}
+        sx={{
+          color: "#ffffff",
+          backgroundColor: "rgba(0, 0, 0, 0.87)",
+        }}
+      />
+    </Tabs>
+    {/* <div className="toggle-buttons">
+      <button onClick={() => handleLanguageToggle('en')}>English</button>
+      <button onClick={() => handleLanguageToggle('ne')}>नेपाली</button>
+    </div> */}
         <TabPanel value={activeTab} index="active">
           <div className="filterdiv">
             <Grid container spacing={2} sx={{ marginTop: 1, marginBottom: 1 }}>
@@ -197,7 +233,7 @@ const Home = () => {
                       // Set the background color of the label
                     }}
                   >
-                    Filter by Category
+                 {labels.filterByCategory}
                   </InputLabel>
                   <Select
                     label="Select Category"
@@ -231,7 +267,7 @@ const Home = () => {
                       // Set the background color of the label
                     }}
                   >
-                    Filter by Priority
+                  {labels.filterByPriority}
                   </InputLabel>
                   <Select
                     label="Select Priority"
@@ -247,15 +283,45 @@ const Home = () => {
                       }
                     }}
                   >
-                    <MenuItem value="">All</MenuItem>
+                    <MenuItem value="">{labels.ALL}</MenuItem>  //cant use labels.instead i cna do [] 
                     {priorities.map((priority) => (
                       <MenuItem value={priority._id} key={priority._id}>
-                        {priority.name}
+                        {labels[priority.name]}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
               </Grid>
+              <Grid item>
+  <FormControl sx={{ minWidth: 200 }}>
+    <InputLabel
+      htmlFor="sortOption"
+      sx={{
+        color: 'white',
+      }}
+    >
+     {labels.sortoption}
+    </InputLabel>
+    <Select
+      label="Sort Option"
+      id="sortOption"
+      value={sortOption}
+      onChange={(e) => setSortOption(e.target.value)}
+      sx={{
+        '& .MuiSelect-select': {
+          color: 'white'
+        },
+        '& .MuiInput-underline:before': {
+          borderBottomColor: 'white'
+        }
+      }}
+    >
+      <MenuItem value="highestDate">{labels.descendingdate}</MenuItem>
+      <MenuItem value="lowestDate">{labels.ascendingdate}</MenuItem>
+    </Select>
+  </FormControl>
+</Grid>
+
             </Grid>
           </div>
 
@@ -269,9 +335,11 @@ const Home = () => {
                     <Box key={group.date} sx={{ marginBottom: 4 }}>
                       <Paper
                         sx={{
-                          backgroundColor: "#f8f8f8",
+                          backgroundColor: "#000000",
                           padding: "12px",
                           marginBottom: "12px",
+                          marginTop:"7px",
+                          color:"white"
                         }}
                       >
                         <Typography variant="h6">{group.date}</Typography>
@@ -287,7 +355,7 @@ const Home = () => {
                   ))}
                 </Box>
               ) : (
-                <p>No todos to display.</p>
+                <p style={{color:'white'}}>{labels.sorrynotavailablemsg}.</p>
               )}
             </>
           )}
@@ -299,9 +367,11 @@ const Home = () => {
                 <Box key={group.date} sx={{ marginBottom: 4 }}>
                   <Paper
                     sx={{
-                      backgroundColor: "#f8f8f8",
+                      backgroundColor: "#000000",
                       padding: "12px",
                       marginBottom: "12px",
+                      marginTop:"7px",
+                      color:"white"
                     }}
                   >
                     <Typography variant="h6">{group.date}</Typography>
@@ -317,7 +387,37 @@ const Home = () => {
               ))}
             </Box>
           ) : (
-            <p>No completed todos to display.</p>
+            <p style={{color:'white'}}>{labels.sorrynotavailablemsg}</p>
+          )}
+        </TabPanel>
+        <TabPanel value={activeTab} index="assigned">
+          {unassignedTodos && unassignedTodos.length > 0 ? (
+            <Box>
+              {groupTodosByDate(unassignedTodos).map((group) => (
+                <Box key={group.date} sx={{ marginBottom: 4 }}>
+                  <Paper
+                    sx={{
+                      backgroundColor: "#000000",
+                      padding: "12px",
+                      marginBottom: "12px",
+                      marginTop:"10px",
+                      color:"white"
+                    }}
+                  >
+                    <Typography variant="h6">{group.date}</Typography>
+                  </Paper>
+                  {group.todos.map((todo) => (
+                    <TodoDetails
+                      Todo={todo}
+                      key={todo._id}
+                      isCompleted={true}
+                    />
+                  ))}
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <p style={{color:'white'}}>No assigned todos to display.</p>
           )}
         </TabPanel>
       </div>
@@ -334,4 +434,4 @@ const TabPanel = ({ children, value, index }) => {
   );
 };
 
-export default Home;
+export default Home

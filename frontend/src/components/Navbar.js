@@ -6,11 +6,14 @@ import { useLogout } from '../hooks/useLogout';
 import { useAuthContext } from '../hooks/useAuthContext';
 import MenuItem from '@mui/material/MenuItem';
 import Menu from '@mui/material/Menu';
+import { useLanguageContext } from "../hooks/useLanguageContext";
+
 
 const Navbar = () => {
   const { logout } = useLogout();
   const { user } = useAuthContext();
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const { locale, labels, handleLanguageToggle } = useLanguageContext();
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -30,7 +33,7 @@ const Navbar = () => {
       <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <Link to="/">
-            <h1>TODO Buddy</h1>
+            <h1>{labels.TODONAVBARHEADING}</h1>
           </Link>
         </div>
         <nav>
@@ -61,6 +64,14 @@ const Navbar = () => {
               >
                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
               </Menu>
+                  <div className="toggle-buttons">
+                  <Button onClick={() => handleLanguageToggle('en')} sx={{marginLeft:'50px'}} variant="outlined">
+                  English
+                 </Button>
+                 <Button onClick={() => handleLanguageToggle('ne')} sx={{marginLeft:'3px'}} variant="outlined">
+                  नेपाली
+                 </Button>
+    </div>
             </div>
           )}
           {!user && (
